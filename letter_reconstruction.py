@@ -1,29 +1,23 @@
+import ann
+import numpy as np
+
+real_values = np.genfromtxt("average_output.txt")
 
 
-# Matrix will be a similar construction to the dataset described by this,
-# https://archive.ics.uci.edu/ml/machine-learning-databases/letter-recognition/letter-recognition.names
-# it will feed through the ANN, and return an array with the fitness of each organism
-# in: [[letter, features..], [letter, features..], ..]
+# Fitness will feed through the ANN, and return an array with the fitness of each organism
+# in: [[letter, 1,0,0,..], [letter, 0,1,1,..], ..]
 # out: [fitness, fitness, ..]
 def fitness(matrix):
-    # TODO by Dakota
-    return []
-
-
-# This will take in the bit string/map of the pixels for the generated letters and create the feature vector based on
-# https://archive.ics.uci.edu/ml/machine-learning-databases/letter-recognition/letter-recognition.names
-# in: [[letter, 0, 1, 0, ..], [letter, 1,0,1, ..], ..]
-# out: [[letter, features..], [letter, features], ..]
-def prepare_data(organisms):
-    # TODO by Henry/Dakota
-    return []
+    ret_array = ann.fitness_value(matrix)
+    real_comparison = real_values - ret_array
+    return ret_array  # np.abs(real_comparison)
 
 
 # Takes in the current generation of organisms and creates the next generation using recombination and mutation
 # in: [[letter, 0, 1, 0, ..], [letter, 1,0,1, ..], ..]
 # out: [[letter, 0, 1, 0, ..], [letter, 1,0,1, ..], ..]
 def reproduce(organisms):
-    fit = fitness(prepare_data(organisms))
-    # TODO by Dakota/Henry, maybe just reuse code from PA1
+    fit = fitness(organisms)
+    # TODO by Henry, maybe just reuse code from PA1
     return []
 
