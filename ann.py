@@ -29,6 +29,6 @@ def fitness_value(data):
     activations = feed_through(data)
     ret_array = []
     for item in data:
-        difference = np.sum(activations[int(item[0]) - 1] - activations)
+        difference = abs(np.sum(activations[int(item[0]) - 1] - activations))
         ret_array.append(difference)
     return np.array(ret_array)
