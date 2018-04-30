@@ -27,7 +27,7 @@ def mutation(individual, chance):
 # Takes in the current generation of organisms and creates the next generation using recombination and mutation
 # in: [[letter, 0, 1, 0, ..], [letter, 1,0,1, ..], ..]
 # out: [[letter, 0, 1, 0, ..], [letter, 1,0,1, ..], ..]
-#
+# 2501 features
 # will return an list of the next generation chosen via fitness proportionate 1-point crossover and bitwise mutation
 # Assumptions: population is a 2d list of each individual in the population
 # fitness is a list of the respective fitness of each individual
