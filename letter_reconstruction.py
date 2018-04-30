@@ -59,30 +59,41 @@ def reproduce(population):
     while len(mating_pool) < len(population):
         spin = random.randint(0, (len(roulette_wheel) - 1))
         mating_pool.append(population[roulette_wheel[spin]])
-    while len(next_generation) < len(population):
-        if len(mating_pool) >= 2:
-            crossover_chance = random.random()
-            if crossover_chance < .95:
-                split_points = []
-                for i in range(10):
-                    split_points.append(random.randint(1, len(population[0])))
-                split_points.sort()
-                child_one = list(mating_pool[0][0:split_points[0]])
-                child_two = list(mating_pool[0][0:split_points[0]])
-                for i in range(2, len(split_points)):
-                    child_one.extend(mating_pool[0][split_points[i-1]:split_points[i]])
-                    child_two.extend(mating_pool[0][split_points[i-1]:split_points[i]])
-                child_one = mutation(child_one, 1 / len(population))
-                child_two = mutation(child_two, 1 / len(population))
-                next_generation.extend(np.array([np.array(child_one), np.array(child_two)]))
-                del mating_pool[0]
-                del mating_pool[0]
-        if len(mating_pool) >= 1:
-            reproduction_chance = random.random()
-            if reproduction_chance < .05:
-                clone = mutation(mating_pool[0], 1 / len(population))
-                next_generation.append(np.array(clone))
-                del mating_pool[0]
+    for i in range(1, 26):
+        letter_population = 100
+        letter_next_generation = []
+        while len(letter_next_generation) < letter_population: # TODO: fix to get appropriate size of each letter representation in the mating pool
+            if len(mating_pool) >= 2:
+                crossover_chance = random.random()
+                if crossover_chance < .95:
+                    split_points = []
+                    for i in range(10):
+                        split_points.append(random.randint(1, len(population[0])))
+                    split_points.sort()
+                    child_one = list(mating_pool[0][0:split_points[0]])
+                    child_two = list(mating_pool[1][0:split_points[0]])
+                    for i in range(1, len(split_points)):
+                        bit = i % 2
+                        if bit == 0:
+                            obit = 1
+                        else:
+                            obit = 0
+                        child_one.extend(mating_pool[bit][split_points[i-1]:split_points[i]])
+                        child_two.extend(mating_pool[obit][split_points[i-1]:split_points[i]])
+                    child_one.extend(mating_pool[obit][split_points[-1]:])
+                    child_two.extend(mating_pool[bit][split_points[-1]:])
+                    child_one = mutation(child_one, 1 / len(population))
+                    child_two = mutation(child_two, 1 / len(population))
+                    letter_next_generation.extend([child_one, child_two])
+                    del mating_pool[0]
+                    del mating_pool[0]
+            if len(mating_pool) >= 1:
+                reproduction_chance = random.random()
+                if reproduction_chance < .05:
+                    clone = mutation(mating_pool[0], 1 / len(population))
+                    next_generation.append(np.array(clone))
+                    del mating_pool[0]
+        next_generation.extend(letter_next_generation)
     return np.array(next_generation)
 
 
@@ -106,11 +117,11 @@ if __name__ == '__main__':
         print("Generation " + str(generation+1))
         fit = fitness(candidates)
         avg_gen_fitness.append(float(np.sum(fit)) / len(fit))
-        gen_best_fitness = fit[np.argmax(fit)]
+        gen_best_fitness = fit[np.argmin(fit)]
         print("Best fitness " + str(gen_best_fitness) + " and average fitness " + str(float(np.sum(fit)) / len(fit)))
         if gen_best_fitness > best_fitness:
             best_fitness = gen_best_fitness
-            best = candidates[np.argmax(fit)]
+            best = candidates[np.argmin(fit)]
             best_generation = generation
         candidates = reproduce(candidates)
 
