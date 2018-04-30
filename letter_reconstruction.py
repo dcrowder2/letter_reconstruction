@@ -3,6 +3,16 @@ import numpy as np
 
 real_values = np.genfromtxt("average_output.txt")
 
+def genjpg(bitstring, filename):
+    canvas = Image.new("RGB", (50, 50), 'white')
+    pixels = canvas.load()
+    for i in range(50):
+        for j in range(50):
+            value = bitstring[50 * i + j]
+            if value == '0':
+                pixels[i, j] = (0, 0, 0)
+    canvas.save(filename)
+
 # Fitness will feed through the ANN, and return an array with the fitness of each organism
 # in: [[letter, 1,0,0,..], [letter, 0,1,1,..], ..]
 # out: [fitness, fitness, ..]
