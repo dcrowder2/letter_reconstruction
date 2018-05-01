@@ -3,6 +3,8 @@ import numpy as np
 w1 = np.genfromtxt("weights1(.77622).txt")
 w2 = np.genfromtxt("weights2(.77622).txt")
 
+real_values = np.genfromtxt("average_output.txt")
+
 
 def sigmoid(number):
     return 1 / (1 + np.exp(-number))
@@ -33,6 +35,19 @@ def fitness_value(size, data):
         prev_size += size[i]
         activations = feed_through(letter_data)
         for item in letter_data:
-            difference = abs(np.sum(activations[int(item[0]) - 1] - activations))
+            difference = abs(np.sum(activations[i] - activations))
+            ret_array[i].append(difference)
+    return np.array(ret_array)
+
+
+def real_comparison(size, data):
+    ret_array = [[] for no_use in range(26)]
+    prev_size = 0
+    for i in range(26):
+        letter_data = data[prev_size:prev_size + size[i]]
+        prev_size += size[i]
+        activations = feed_through(letter_data)
+        for item in letter_data:
+            difference = abs(np.sum(activations - real_values[i]))
             ret_array[i].append(difference)
     return np.array(ret_array)
