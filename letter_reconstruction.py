@@ -4,6 +4,17 @@ import random
 from PIL import Image
 
 
+def outliers(bitstring):
+    outlier = 0
+    for i in range(2, len(bitstring)):
+        bit = bitstring[i]
+        lastbit = bitstring[i-1]
+        lastlastbit = bitstring[i-2]
+        if lastlastbit == 0 and lastbit == 1 and bit == 0:
+            outlier += 1
+    return outlier
+
+
 def get_char(number):
     return chr(65 + number)
 
@@ -31,7 +42,13 @@ def fitness(matrix):
         for_fitness.extend(matrix[i])
     ret_array = ann.fitness_value(size, for_fitness)
     real_comparison = ann.real_comparison(size, for_fitness)
-    return real_comparison
+    outliers_count = []
+    for i in range(26):
+        temp = []
+        for j in range(len(matrix[i])):
+            temp.append(outliers(matrix[i, j]))
+        outliers_count.append(temp)
+    return real_comparison + outliers_count
 
 
 # uses the chance provided by the calling method to randomly mutate on one point if it is chosen to mutate
@@ -119,7 +136,7 @@ if __name__ == '__main__':
     print("Starting")
 
     population_size = 100
-    generation_limit = 25
+    generation_limit = 50
     candidates = [[] for i in range(26)]
 
     print("Generating starting organisms")
@@ -131,7 +148,7 @@ if __name__ == '__main__':
     candidates = np.array(candidates)
 
     avg_gen_fitness = [[] for i in range(26)]
-    best_fitness = np.zeros(26)
+    best_fitness = np.full(26, 99999999.)
     best_generation = np.zeros(26)
     best = [[] for i in range(26)]
 
@@ -149,10 +166,10 @@ if __name__ == '__main__':
             print("Best fitness for letter " + get_char(i) + " is " + str(letter_gen_best_fitness) +
                   " and average fitness " + str(temp_avg))
 
-            if letter_gen_best_fitness > best_fitness[i]:
+            if letter_gen_best_fitness < best_fitness[i]:
                 best_fitness[i] = letter_gen_best_fitness
                 best[i] = candidates[i, np.argmin(fit[i])]
-                best_generation[i] = generation
+                best_generation[i] = int(generation) + 1
 
         candidates = reproduce(candidates)
 
