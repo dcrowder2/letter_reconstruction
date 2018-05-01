@@ -3,8 +3,6 @@ import numpy as np
 import random
 from PIL import Image
 
-real_values = np.genfromtxt("average_output.txt")
-
 
 def get_char(number):
     return chr(65 + number)
@@ -16,7 +14,7 @@ def genjpg(bitstring, filename):
     for i in range(50):
         for j in range(50):
             value = bitstring[50 * i + j]
-            if value == '0':
+            if value == 0:
                 pixels[i, j] = (0, 0, 0)
     canvas.save(filename)
 
@@ -27,12 +25,13 @@ def genjpg(bitstring, filename):
 def fitness(matrix):
     for_fitness = []
     size = []
+
     for i in range(26):
         size.append(len(matrix[i]))
         for_fitness.extend(matrix[i])
     ret_array = ann.fitness_value(size, for_fitness)
-    # real_comparison = real_values - ret_array  TODO: fix ValueError: operands could not be broadcast together with shapes (27,) (2600,)
-    return ret_array  # np.abs(real_comparison)
+    real_comparison = ann.real_comparison(size, for_fitness)
+    return real_comparison
 
 
 # uses the chance provided by the calling method to randomly mutate on one point if it is chosen to mutate
@@ -66,7 +65,7 @@ def reproduce(population):
         roulette_wheel = []
         generation_fitness = sum(fit[i])
         for individual in range(len(population[i])):
-            inv_fitness = int(round((float(fit[i, individual]) / generation_fitness) * len(population[i])))
+            inv_fitness = int(round((fit[i, individual] / generation_fitness) * len(population[i])))
             for number in range(inv_fitness):
                 roulette_wheel.append(individual)
 
@@ -120,7 +119,7 @@ if __name__ == '__main__':
     print("Starting")
 
     population_size = 100
-    generation_limit = 100
+    generation_limit = 25
     candidates = [[] for i in range(26)]
 
     print("Generating starting organisms")
@@ -139,11 +138,9 @@ if __name__ == '__main__':
     print("Starting genetic algorithm...")
 
     for generation in range(int(generation_limit)):
-        print(candidates.shape)
         print("Generation " + str(generation+1))
 
         fit = fitness(candidates)
-        print(fit.shape)
         for i in range(26):
             temp_avg = float(np.sum(fit[i])) / len(fit[i])
             avg_gen_fitness[i].append(temp_avg)
@@ -154,7 +151,7 @@ if __name__ == '__main__':
 
             if letter_gen_best_fitness > best_fitness[i]:
                 best_fitness[i] = letter_gen_best_fitness
-                best[i] = candidates[i, [np.argmin(fit[i])]]
+                best[i] = candidates[i, np.argmin(fit[i])]
                 best_generation[i] = generation
 
         candidates = reproduce(candidates)
