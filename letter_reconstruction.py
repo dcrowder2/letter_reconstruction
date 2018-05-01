@@ -5,6 +5,11 @@ from PIL import Image
 
 real_values = np.genfromtxt("average_output.txt")
 
+
+def get_char(number):
+    return chr(65 + number)
+
+
 def genjpg(bitstring, filename):
     canvas = Image.new("RGB", (50, 50), 'white')
     pixels = canvas.load()
@@ -17,10 +22,15 @@ def genjpg(bitstring, filename):
 
 
 # Fitness will feed through the ANN, and return an array with the fitness of each organism
-# in: [[letter, 1,0,0,..], [letter, 0,1,1,..], ..]
-# out: [fitness, fitness, ..]
+# in: [[[1,0,1,...], ...][[1,0,1,0,...],...], ...] shape: (letter, organism, feature)
+# out: [[fitness, fitness, ..], ...] shape: (letter, organism_fitness)
 def fitness(matrix):
-    ret_array = ann.fitness_value(matrix)
+    for_fitness = []
+    size = []
+    for i in range(26):
+        size.append(len(matrix[i]))
+        for_fitness.extend(matrix[i])
+    ret_array = ann.fitness_value(size, for_fitness)
     # real_comparison = real_values - ret_array  TODO: fix ValueError: operands could not be broadcast together with shapes (27,) (2600,)
     return ret_array  # np.abs(real_comparison)
 
@@ -31,7 +41,7 @@ def mutation(individual, chance):
     mutation_chance = random.random()
     mutated_individual = individual
     if mutation_chance < chance:
-        mutate_point = random.randint(0, len(individual))
+        mutate_point = random.randint(0, (len(individual)-1))
         if individual[mutate_point] == 0:
             mutated_individual[mutate_point] = 1
         else:
@@ -40,91 +50,116 @@ def mutation(individual, chance):
 
 
 # Takes in the current generation of organisms and creates the next generation using recombination and mutation
-# in: [[letter, 0, 1, 0, ..], [letter, 1,0,1, ..], ..]
-# out: [[letter, 0, 1, 0, ..], [letter, 1,0,1, ..], ..]
+# in: [[[1,0,1,...], ...][[1,0,1,0,...],...], ...] shape: (letter, organism, feature)
+# out: [[[1,0,1,...], ...][[1,0,1,0,...],...], ...] shape: (letter, organism, feature)
 # 2501 features
 # will return an list of the next generation chosen via fitness proportionate 1-point crossover and bitwise mutation
 # Assumptions: population is a 2d list of each individual in the population
 # fitness is a list of the respective fitness of each individual
 def reproduce(population):
     fit = fitness(population)
+
     next_generation = []
-    mating_pool = []
-    roulette_wheel = []
-    generation_fitness = sum(fit)
-    for individual in range(len(population)):
-        inv_fitness = int(round(float(fit[individual]) / generation_fitness * len(population)))
-        for number in range(inv_fitness):
-            roulette_wheel.append(individual)
-    while len(mating_pool) < len(population):
-        spin = random.randint(0, (len(roulette_wheel) - 1))
-        mating_pool.append(population[roulette_wheel[spin]])
-    for i in range(1, 26):
-        letter_population = 100
+
+    for i in range(26):
+        mating_pool = []
+        roulette_wheel = []
+        generation_fitness = sum(fit[i])
+        for individual in range(len(population[i])):
+            inv_fitness = int(round((float(fit[i, individual]) / generation_fitness) * len(population[i])))
+            for number in range(inv_fitness):
+                roulette_wheel.append(individual)
+
+        while len(mating_pool) < len(population[i]):
+            spin = random.randint(0, (len(roulette_wheel) - 1))
+            mating_pool.append(population[i, roulette_wheel[spin]])
+
+        letter_population = len(mating_pool)
         letter_next_generation = []
-        while len(letter_next_generation) < letter_population: # TODO: fix to get appropriate size of each letter representation in the mating pool
+        while len(letter_next_generation) < letter_population:
             if len(mating_pool) >= 2:
                 crossover_chance = random.random()
+
                 if crossover_chance < .95:
+
                     split_points = []
                     for i in range(10):
                         split_points.append(random.randint(1, len(population[0])))
                     split_points.sort()
-                    child_one = list(mating_pool[0][0:split_points[0]])
-                    child_two = list(mating_pool[1][0:split_points[0]])
+
+                    child_one = mating_pool[0][0:split_points[0]].tolist()
+                    child_two = mating_pool[1][0:split_points[0]].tolist()
+
                     for i in range(1, len(split_points)):
                         bit = i % 2
-                        if bit == 0:
-                            obit = 1
-                        else:
-                            obit = 0
-                        child_one.extend(mating_pool[bit][split_points[i-1]:split_points[i]])
-                        child_two.extend(mating_pool[obit][split_points[i-1]:split_points[i]])
+                        obit = (i + 1) % 2
+                        child_one.extend(mating_pool[bit][split_points[i-1]:split_points[i]].tolist())
+                        child_two.extend(mating_pool[obit][split_points[i-1]:split_points[i]].tolist())
+
                     child_one.extend(mating_pool[obit][split_points[-1]:])
                     child_two.extend(mating_pool[bit][split_points[-1]:])
-                    child_one = mutation(child_one, 1 / len(population))
-                    child_two = mutation(child_two, 1 / len(population))
+
+                    child_one = mutation(child_one, 1 / len(population[i]))
+                    child_two = mutation(child_two, 1 / len(population[i]))
+
                     letter_next_generation.extend([child_one, child_two])
                     del mating_pool[0]
                     del mating_pool[0]
+
             if len(mating_pool) >= 1:
                 reproduction_chance = random.random()
                 if reproduction_chance < .05:
                     clone = mutation(mating_pool[0], 1 / len(population))
-                    next_generation.append(np.array(clone))
+                    letter_next_generation.append(np.array(clone))
                     del mating_pool[0]
-        next_generation.extend(letter_next_generation)
+        next_generation.append(letter_next_generation)
     return np.array(next_generation)
 
 
 if __name__ == '__main__':
     print("Starting")
+
     population_size = 100
     generation_limit = 100
-    candidates = []
+    candidates = [[] for i in range(26)]
+
     print("Generating starting organisms")
+
     for j in range(26):
         for i in range(int(population_size)):
-            image = [j + 1]
-            image.extend(list(np.random.choice([0, 1], size=(2501,))))
-            candidates.append(np.array(image))
+            image = list(np.random.choice([0, 1], size=(2501,)))
+            candidates[j].append(np.array(image))
     candidates = np.array(candidates)
-    avg_gen_fitness = []
-    best_fitness = 0
+
+    avg_gen_fitness = [[] for i in range(26)]
+    best_fitness = np.zeros(26)
+    best_generation = np.zeros(26)
+    best = [[] for i in range(26)]
+
     print("Starting genetic algorithm...")
+
     for generation in range(int(generation_limit)):
         print(candidates.shape)
         print("Generation " + str(generation+1))
+
         fit = fitness(candidates)
-        avg_gen_fitness.append(float(np.sum(fit)) / len(fit))
-        gen_best_fitness = fit[np.argmin(fit)]
-        print("Best fitness " + str(gen_best_fitness) + " and average fitness " + str(float(np.sum(fit)) / len(fit)))
-        if gen_best_fitness > best_fitness:
-            best_fitness = gen_best_fitness
-            best = candidates[np.argmin(fit)]
-            best_generation = generation
+        print(fit.shape)
+        for i in range(26):
+            temp_avg = float(np.sum(fit[i])) / len(fit[i])
+            avg_gen_fitness[i].append(temp_avg)
+            letter_gen_best_fitness = fit[i][np.argmin(fit[i])]
+
+            print("Best fitness for letter " + get_char(i) + " is " + str(letter_gen_best_fitness) +
+                  " and average fitness " + str(temp_avg))
+
+            if letter_gen_best_fitness > best_fitness[i]:
+                best_fitness[i] = letter_gen_best_fitness
+                best[i] = candidates[i, [np.argmin(fit[i])]]
+                best_generation[i] = generation
+
         candidates = reproduce(candidates)
 
-
-    print("Best fit individual found in generation " + str(best_generation) + " with a fitness of " + str(best_fitness))
-    genjpg(best[1:], "Best.jpg")
+    for i in range(26):
+        print("Best fit " + get_char(i) + " individual found in generation " + str(best_generation[i])
+              + " with a fitness of " + str(best_fitness[i]))
+        genjpg(best[i], "Best_" + get_char(i) + ".jpg")
