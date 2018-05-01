@@ -14,7 +14,7 @@ def soft_max(array):
 
 
 def feed_through(data):
-    s_1 = np.dot(data[:, 1:], w1)
+    s_1 = np.dot(data, w1)
     z_1 = sigmoid(s_1)
 
     s_2 = np.dot(z_1, w2)
@@ -25,10 +25,14 @@ def feed_through(data):
     return output
 
 
-def fitness_value(data):
-    activations = feed_through(data)
-    ret_array = []
-    for item in data:
-        difference = abs(np.sum(activations[int(item[0]) - 1] - activations))
-        ret_array.append(difference)
+def fitness_value(size, data):
+    ret_array = [[] for no_use in range(26)]
+    prev_size = 0
+    for i in range(26):
+        letter_data = data[prev_size:prev_size + size[i]]
+        prev_size += size[i]
+        activations = feed_through(letter_data)
+        for item in letter_data:
+            difference = abs(np.sum(activations[int(item[0]) - 1] - activations))
+            ret_array[i].append(difference)
     return np.array(ret_array)
